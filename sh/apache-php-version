@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+
+PROGRAM_APPNAME=$(basename $0)
+PROGRAM_VERSION="1.0.0"
+APACHE_LIBEXEC_DIR="${APACHE_PATH}/libexec"
+
+show_help() {
+    echo "${PROGRAM_APPNAME} ${PROGRAM_VERSION}" >&2
+    echo ""                                      >&2
+    echo "Usage  : ${PROGRAM_APPNAME} <version>" >&2
+    echo "Example: ${PROGRAM_APPNAME} 5.4.0RC6"  >&2
+    exit 1
+}
+
+check_php_home() {
+    if [[ ! -d ${PHP_HOME} ]]
+    then
+        echo "Sorry, but ${PROGRAM_APPNAME} requires that \$PHP_VERSIONS is set and points to an existing directory." >&2
+        exit 1
+    fi
+}
+
+check_apache_path() {
+    if [[ ! -d ${APACHE_PATH} ]]
+    then
+        echo "Sorry, but ${PROGRAM_APPNAME} requires that \$APACHE_PATH is set and points to an existing directory." >&2
+        exit 1
+    fi
+}
+
+set_up_apache_module_path() {
+    apache_module_path=$PHP_VERSIONS/$PHP_VERSION/libphp5.so
+}
+
+check_apache_module_path() {
+    if [[ ! -f ${apache_module_path} ]]
+    then
+        echo "Sorry, apache module not found: $apache_module_path"
+        exit 1
+    fi
+}
+
+check_apache_libexec_dir() {
+    if [[ ! -d ${APACHE_LIBEXEC_DIR} ]]
+    then
+        echo "Directory not found: $APACHE_LIBEXEC_DIR"
+        exit 1
+    fi
+}
+
+replace_apache_module() {
+    echo "Copy $apache_module_path to $APACHE_LIBEXEC_DIR/libphp5.so"
+    cp $apache_module_path $APACHE_LIBEXEC_DIR/libphp5.so
+}
+
+restart_apache() {
+    echo "Restarting apache..."
+    sudo apachectl restart
+}
+
+[ $# != 1 ] && show_help
+PHP_VERSION=$1
+check_php_home
+check_apache_path
+set_up_apache_module_path
+check_apache_module_path
+check_apache_libexec_dir
+replace_apache_module
+restart_apache
